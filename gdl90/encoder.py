@@ -29,10 +29,10 @@ class Encoder(object):
         for i in range(len(msg)):
             c = chr(msg[i])
             if c in charsToEscape:
-                msgNew.append(escapeChar)
-                msgNew.append(chr(ord(c) ^ 0x20))
+                msgNew.append(ord(escapeChar))
+                msgNew.append(ord(chr(ord(c) ^ 0x20)))
             else:
-                msgNew.append(c)
+                msgNew.append(ord(c))
         
         return(msgNew)
     
@@ -41,8 +41,8 @@ class Encoder(object):
         """returns a prepared a message with CRC, escapes it, adds begin/end markers"""
         self._addCrc(msg)
         newMsg = self._escape(msg)
-        newMsg.insert(0,chr(0x7e))
-        newMsg.append(chr(0x7e))
+        newMsg.insert(0,ord(chr(0x7e)))
+        newMsg.append(ord(chr(0x7e)))
         return(newMsg)
     
     
@@ -87,7 +87,7 @@ class Encoder(object):
             ts = ts & 0x0ffff
             st2 = st2 | 0x80
         
-        msg = bytearray(chr(0x00))
+        msg = bytearray(chr(0x00), 'utf-8')
         fmt = '>BBHH'
         msg.extend(struct.pack(fmt,st1,st2,ts,mc))
         
@@ -106,7 +106,7 @@ class Encoder(object):
     
     def _msgType10and20(self, msgid, status, addrType, address, latitude, longitude, altitude, misc, navIntegrityCat, navAccuracyCat, hVelocity, vVelocity, trackHeading, emitterCat, callSign, code):
         """construct message ID 10 or 20"""
-        msg = bytearray(chr(msgid))
+        msg = bytearray(chr(msgid), 'utf-8')
         
         b = ((status & 0xf) << 4) | (addrType & 0xf)
         msg.append(b)
@@ -122,8 +122,8 @@ class Encoder(object):
         if altitude > 0xffe:  altitude = 0xffe
         
         # altitude is bits 15-4, misc code is bits 3-0
-        msg.append((altitude & 0xff0) >> 4)  # top 8 bits of altitude
-        msg.append( ((altitude & 0xf) << 4) | (misc & 0xf) )
+        msg.append((int(altitude) & 0xff0) >> 4)  # top 8 bits of altitude
+        msg.append( ((int(altitude) & 0xf) << 4) | (misc & 0xf) )
         
         # nav int cat is top 4 bits, acc cat is bottom 4 bits
         msg.append( ((navIntegrityCat & 0xf) << 4) | (navAccuracyCat & 0xf) )
@@ -158,7 +158,7 @@ class Encoder(object):
         msg.append(emitterCat & 0xff)
         
         callSign = str(callSign + " "*8)[:8]
-        msg.extend(callSign)
+        msg.extend(bytearray(callSign, 'utf-8'))
         
         # code is top 4 bits, bottom 4 bits are 'spare'
         msg.append((code & 0xf) << 4)
@@ -168,7 +168,7 @@ class Encoder(object):
     
     def msgOwnershipGeometricAltitude(self, altitude=0, merit=50, warning=False):
         """message ID #11"""
-        msg = bytearray(chr(0x0b))
+        msg = bytearray(chr(0x0b), 'utf-8')
         
         # Convert altitude to 5ft increments
         altitude = int(altitude / 5)
@@ -193,11 +193,11 @@ class Encoder(object):
     
     def msgGpsTime(self, count=0, quality=2, hour=None, minute=None):
         """message ID #101 for Skyradar"""
-        msg = bytearray(chr(0x65))
+        msg = bytearray(chr(0x65), 'utf-8')
         
         msg.append(0x2a) # firmware version
         msg.append(0) # debug data
-        msg.append(chr((0x30 + quality) & 0xff))  # GPS quality: '0'=no fix, '1'=regular, '2'=DGPS (WAAS)
+        msg.append(int(chr((0x30 + quality))) & 0xff)  # GPS quality: '0'=no fix, '1'=regular, '2'=DGPS (WAAS)
         msg.extend(struct.pack('<I',count)[:-1])  # use first three LSB bytes only
         
         if hour is None or minute is None:
@@ -216,7 +216,7 @@ class Encoder(object):
     
     def msgStratuxHeartbeat(self, st1=0x02, ver=1):
         """message ID #204 for Stratux heartbeat"""
-        msg = bytearray(chr(0xcc))
+        msg = bytearray(ord(chr(0xcc)))
         
         fmt = '>B'
         data = st1 & 0x03  # lower two bits only
@@ -229,9 +229,9 @@ class Encoder(object):
     def msgSXHeartbeat(self, fv=0x0011, hv=0x0001, st1=0x02, st2=0x01, satLock=0, satConn=0, num978=0, num1090=0, rate978=0, rate1090=0, cpuTemp=0, towers=[]):
         """message ID #29 for Hiltonsoftware SX heartbeat"""
         
-        msg = bytearray(chr(0x1d))
+        msg = bytearray(chr(0x1d), 'utf-8')
         fmt = '>ccBBLLHHBBHHHHHB'
-        msg.extend(struct.pack(fmt,'S','X',1,1,fv,hv,st1,st2,satLock,satConn,num978,num1090,rate978,rate1090,cpuTemp,len(towers)))
+        msg.extend(struct.pack(fmt,bytes('S','utf-8'),bytes('X','utf-8'),1,1,fv,hv,st1,st2,satLock,satConn,num978,num1090,rate978,rate1090,cpuTemp,len(towers)))
 
         for tower in towers:
             (lat, lon) = tower[0:2]

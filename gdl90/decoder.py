@@ -139,12 +139,12 @@ class Decoder(object):
         """
         self.stats['msgCount'] += 1
         if (self.stats['msgCount'] % self.reportFrequency) == 0:
-            print "Statistics: total msgs = %d, resyncs = %d" % (self.stats['msgCount'], self.stats['resync'])
+            print("Statistics: total msgs = %d, resyncs = %d" % (self.stats['msgCount'], self.stats['resync']))
             msgTypes = self.stats['msgs'].keys()
             msgTypes.sort()
             for mt in msgTypes:
                 (g, b) = self.stats['msgs'][mt]
-                print "  Messge #%d: %d good, %d bad" % (mt, g, b)
+                print("  Messge #%d: %d good, %d bad" % (mt, g, b))
         """
         
         # Create a new entry for this message type if it doesn't exist
@@ -153,20 +153,20 @@ class Decoder(object):
         
         if not crcValid:
             self.stats['msgs'][msg[0]][1] += 1
-            #print "****BAD CRC****"
+            #print("****BAD CRC****")
             return False
         self.stats['msgs'][msg[0]][0] += 1
         
         """
         #if msg[0] in [0, 10, 11]:
         if msg[0] in [101]:
-            print "msg%d: " % (msg[0])
+            print("msg%d: " % (msg[0]))
             for m in [msg]:
                 hexstr = ""
                 for n in range(len(msg)):
                     if (n % 4) == 0:  hexstr += " "
                     hexstr += "%02x" % (msg[n])
-                print " " + hexstr
+                print(" " + hexstr)
         """
         
         m = messages.messageToObject(msg)
@@ -176,7 +176,7 @@ class Decoder(object):
         if m.MsgType == 'Heartbeat':
             self.currtime += self.heartbeatInterval
             if self.format == 'normal':
-                print 'MSG00: s1=%02x, s2=%02x, ts=%02x' % (m.StatusByte1, m.StatusByte2, m.TimeStamp)
+                print('MSG00: s1=%02x, s2=%02x, ts=%02x' % (m.StatusByte1, m.StatusByte2, m.TimeStamp))
             elif self.format == 'plotflight':
                 self.altitudeAge += 1
         
@@ -185,7 +185,7 @@ class Decoder(object):
                 if m.NavIntegrityCat == 0 or m.NavIntegrityCat == 1:  # unknown or <20nm, consider it invalid
                     pass
             elif self.format == 'normal':
-                print 'MSG10: %0.7f %0.7f %d %d %d' % (m.Latitude, m.Longitude, m.HVelocity, m.Altitude, m.TrackHeading)
+                print('MSG10: %0.7f %0.7f %d %d %d' % (m.Latitude, m.Longitude, m.HVelocity, m.Altitude, m.TrackHeading))
             elif self.format == 'plotflight':
                 if self.altitudeAge < self.altitudeMaxAge:
                     altitude = self.altitude
@@ -196,11 +196,11 @@ class Decoder(object):
                 # Must have the GPS time from a message 101 before outputting anything
                 if not self.gpsTimeReceived:
                     return True
-                print '%02d:%02d:%02d %0.7f %0.7f %d %d %d' % (self.currtime.hour, self.currtime.minute, self.currtime.second, m.Latitude, m.Longitude, m.HVelocity, altitude, m.TrackHeading)
+                print('%02d:%02d:%02d %0.7f %0.7f %d %d %d' % (self.currtime.hour, self.currtime.minute, self.currtime.second, m.Latitude, m.Longitude, m.HVelocity, altitude, m.TrackHeading))
         
         elif m.MsgType == 'OwnershipGeometricAltitude':
             if self.format == 'normal':
-                print 'MSG11: %d %04xh' % (m.Altitude, m.VerticalMetrics)
+                print('MSG11: %d %04xh' % (m.Altitude, m.VerticalMetrics))
             elif self.format == 'plotflight':
                 self.altitude = m.Altitude
                 self.altitudeAge = 0
@@ -209,7 +209,7 @@ class Decoder(object):
             if m.Latitude == 0.00 and m.Longitude == 0.00 and m.NavIntegrityCat == 0:  # no valid position
                 pass
             elif self.format == 'normal':
-                print 'MSG20: %0.7f %0.7f %d %d %d %d %s' % (m.Latitude, m.Longitude, m.HVelocity, m.VVelocity, m.Altitude, m.TrackHeading, m.CallSign)
+                print('MSG20: %0.7f %0.7f %d %d %d %d %s' % (m.Latitude, m.Longitude, m.HVelocity, m.VVelocity, m.Altitude, m.TrackHeading, m.CallSign))
         
         elif m.MsgType == 'GpsTime':
             if not self.gpsTimeReceived:
@@ -223,7 +223,7 @@ class Decoder(object):
                     self.currtime = datetime.datetime.combine(self.currtime, utcTime)
             
             if self.format == 'normal':
-                print 'MSG101: %02d:%02d UTC (waas = %s)' % (m.Hour, m.Minute, m.Waas)
+                print('MSG101: %02d:%02d UTC (waas = %s)' % (m.Hour, m.Minute, m.Waas))
         
         elif m.MsgType == 'UplinkData' and self.uatOutput == True:
             messageUatToObject(m)

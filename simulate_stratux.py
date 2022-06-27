@@ -17,8 +17,8 @@ import os
 
 # Default values for options
 #DEF_SEND_ADDR="255.255.255.255"
-DEF_SEND_ADDR="10.1.1.255"
-DEF_SEND_PORT=4000
+DEF_SEND_ADDR="localhost"
+DEF_SEND_PORT=5000
 
 LATLONG_TO_RADIANS = math.pi / 180.0
 RADIANS_TO_NM = 180.0 * 60.0 / math.pi
@@ -57,8 +57,8 @@ if __name__ == '__main__':
 
     destPort = int(DEF_SEND_PORT)
 
-    print "Simulating Stratux unit."
-    print "Transmitting to %s:%s" % (destAddr, destPort)
+    print ("Simulating Stratux unit.")
+    print ("Transmitting to %s:%s" % (destAddr, destPort))
     
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -68,8 +68,8 @@ if __name__ == '__main__':
     encoder = gdl90.encoder.Encoder()
     
     callSign = 'N12345'
-    latCenter = 30.456447222222224
-    longCenter = -98.2941888888889
+    latCenter = 41.184510
+    longCenter = -95.962490
     pathRadius = 0.25  # degrees
     angle = 0.0
     altitude = 0
@@ -88,10 +88,10 @@ if __name__ == '__main__':
 
     # traffic tuples: lat, long, alt, hspeed, vspeed, hdg, callSign, address
     traffic = [
-        (30.60, -98.00, 3000, 100, 500, 45, 'NBNDT1', 0x000001),
-        (30.60, -98.40, 2500, 120, 0, 295, 'NBNDT2', 0x000002),
-        (30.18, -98.13, 3200, 150, -100, 285, 'NBNDT3', 0x000003),
-        (30.13, -98.30, 2000, 110, 250, 10, 'NBNDT4', 0x000004),
+        (41.60, -96.00, 3000, 100, 500, 45, 'NBNDT1', 0x000001),
+        (41.60, -95.80, 2500, 120, 0, 295, 'NBNDT2', 0x000002),
+        (41.18, -95.93, 3200, 150, -100, 285, 'NBNDT3', 0x000003),
+        (41.13, -95.30, 2000, 400, 250, 10, 'NBNDT4', 0x000004),
     ]
     
     uptime = 0
@@ -157,7 +157,7 @@ if __name__ == '__main__':
         # On-screen status output
         uptime += 1
         if uptime % 10 == 0:
-            print "Uptime %d, lat=%3.6f, long=%3.6f, altitude=%d, heading=%d, angle=%3.3f" % (uptime, latitude, longitude, altitude, heading, angle)
+            print ("Uptime %d, lat=%3.6f, long=%3.6f, altitude=%d, heading=%d, angle=%3.3f" % (uptime, latitude, longitude, altitude, heading, angle))
         
         # Delay for the rest of this second
         time.sleep(1.0 - (time.time() - timeStart))
