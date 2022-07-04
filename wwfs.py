@@ -2,7 +2,7 @@
 #
 # wwfs.py
 #
-"""WWFS - "World's Worst Flight Simulator" or "Wonderful Way to Fake Stratux
+"""WWFS - "World's Worst Flight Simulator" or "Wonderful Way to Fake Stratux"
 
 This program implements a sender of the GDL-90 data format used by Stratux, with
 the parameters for the ownship/pilot craft being received through user input (currently
@@ -17,6 +17,7 @@ import socket
 import gdl90.encoder
 import math
 import os
+import argparse
 
 import keyboard
 import threading
@@ -122,22 +123,22 @@ def horizontal_speed(distance, seconds):
     return(int(3600.0 * distance / seconds))
 
     
-def main():
+def main(args):
 
     global lat_input
     global lon_input
     global vinput
     global heading_input
-
-    if len(sys.argv) > 1:
-        destAddr = sys.argv[1]
+    
+    if args.host:
+        destAddr = args.host
     elif 'SEND_ADDR' in os.environ.keys():
         destAddr = os.environ['SEND_ADDR']
     else:
         destAddr = DEF_SEND_ADDR
 
-    if len(sys.argv) > 2:
-        destPort = int(sys.argv[2])
+    if args.port:
+        destPort = args.port
     else:
         destPort = int(DEF_SEND_PORT)
 
@@ -254,7 +255,11 @@ def main():
             time.sleep(1.0 - (time.time() - timeStart))
 
 if __name__ == '__main__':
-    threading1 = threading.Thread(target=main)
+    parser = argparse.ArgumentParser(description="Simulate user-defined ownship and traffic for Stratux/GDL90 network receivers")
+    parser.add_argument('--host', dest='host', type=str, help='Host/subnet to broadcast GDL90 packets to')
+    parser.add_argument('--port', dest='port', type=int, help='Port to broadcast GDL90 packets to')    
+    pargs = parser.parse_args()
+    threading1 = threading.Thread(target=main, args=(pargs,))
     threading1.daemon = True
     threading1.start()
     process_input() 
