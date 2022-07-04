@@ -129,12 +129,17 @@ def main():
     global vinput
     global heading_input
 
-    if 'SEND_ADDR' in os.environ.keys():
+    if len(sys.argv) > 1:
+        destAddr = sys.argv[1]
+    elif 'SEND_ADDR' in os.environ.keys():
         destAddr = os.environ['SEND_ADDR']
     else:
         destAddr = DEF_SEND_ADDR
 
-    destPort = int(DEF_SEND_PORT)
+    if len(sys.argv) > 2:
+        destPort = int(sys.argv[2])
+    else:
+        destPort = int(DEF_SEND_PORT)
 
     print ("Simulating Stratux unit.")
     print ("Transmitting to %s:%s" % (destAddr, destPort))
