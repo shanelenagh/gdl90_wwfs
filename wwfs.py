@@ -122,6 +122,24 @@ def horizontal_speed(distance, seconds):
     """compute integer speed for a distance traveled in some number of seconds"""
     return(int(3600.0 * distance / seconds))
 
+def parse_traffic_list(traffic):
+    parsed_traffic = []
+    i = 0x000001
+    for t in traffic:
+        try:
+            tdict = {}
+            for item in t.split(","):
+                kvp = item.split("=")
+                tdict[kvp[0].strip()] = kvp[1].strip()
+            parsed_traffic.append((float(tdict["lat"]), float(tdict["long"]), int(tdict["alt"]), int(tdict["hspeed"]), int(tdict["vspeed"]), int(tdict["hdg"]), tdict["callsign"], i))
+            i = i+1
+        except:
+            print(">>>>>>>>>>>>>>>>>>>> Traffic items in args should be CSV of the following (any order): lat={float},long={float},alt={int},hdg={int},hspeed={int},vspeed={int},callsign={sting}")
+            print(f">>>>>>>>>>>>>>>>>>>> and you provided: {t}")      
+            print("No traffic loaded from CLI as a result, and program is exiting")
+            os._exit(1)
+    
+    return parsed_traffic
     
 def main(args):
 
@@ -152,15 +170,13 @@ def main(args):
     packetTotal = 0
     encoder = gdl90.encoder.Encoder()
     
-    callSign = 'N12345'
-    latCenter = 41.184510
-    longCenter = -95.962490
-    pathRadius = 0.25  # degrees
-    angle = 0.0
-    altitude = 0
-    heading = 0
-    groundspeed = 0
-    verticalspeed = 0
+    callSign = args.callsign if args.callsign else 'N12345'
+    latCenter = args.lat if args.lat else 41.184510
+    longCenter = args.long if args.long else -95.962490
+    altitude = args.alt if args.alt else 0
+    heading_input =  args.hdg if args.hdg else 0
+    groundspeed = args.hspeed if args.hspeed else 0
+    verticalspeed = args.vspeed if args.vspeed else 0
     
     # ADS-B towers:
     towers = [
@@ -172,12 +188,15 @@ def main(args):
     ]
 
     # traffic tuples: lat, long, alt, hspeed, vspeed, hdg, callSign, address
-    traffic = [
-        (41.60, -96.00, 3000, 100, 500, 45, 'NBNDT1', 0x000001),
-        (41.60, -95.80, 2500, 120, 0, 295, 'NBNDT2', 0x000002),
-        (41.18, -95.93, 3200, 150, -100, 285, 'NBNDT3', 0x000003),
-        (41.13, -95.30, 2000, 400, 250, 10, 'NBNDT4', 0x000004),
-    ]
+    if args.traffic:
+        traffic = parse_traffic_list(args.traffic)
+    else:
+        traffic = [
+            (41.60, -96.00, 3000, 100, 500, 45, 'NBNDT1', 0x000001),
+            (41.60, -95.80, 2500, 120, 0, 295, 'NBNDT2', 0x000002),
+            (41.18, -95.93, 3200, 150, -100, 285, 'NBNDT3', 0x000003),
+            (41.13, -95.30, 2000, 400, 250, 10, 'NBNDT4', 0x000004),
+        ]
     
     uptime = 0
     latitudePrev = latCenter
@@ -195,7 +214,6 @@ def main(args):
         longitude = longitudePrev + lon_input 
         altitude = altitudePrev + vinput 
         heading = heading_input 
-        angle = heading_input
         
         lat_input = 0
         lon_input = 0
@@ -238,6 +256,8 @@ def main(args):
             (tlat, tlong, talt, tspeed, tvspeed, thdg, tcall, taddr) = t
             buf = encoder.msgTrafficReport(latitude=tlat, longitude=tlong, altitude=talt, hVelocity=tspeed, vVelocity=tvspeed, trackHeading=thdg, callSign=tcall, address=taddr)
             s.sendto(buf, (destAddr, destPort))
+            if args.verbose:
+                print(f"Traffic {tcall} at ({tlat},{tlong}) at alt {talt}, groundspeed {tspeed}, vspeed {tvspeed}, heading {thdg}")
             packetTotal += 1
         
         # GPS Time, Custom 101 Message
@@ -248,16 +268,26 @@ def main(args):
         # On-screen status output, every 5 seconds
         uptime += 1
         if uptime % 5 == 0:
-            print ("Uptime %d, lat=%3.6f, long=%3.6f, altitude=%d, heading=%d, angle=%3.3f" % (uptime, latitude, longitude, altitude, heading, angle))
+            print ("Uptime %d, lat=%3.6f, long=%3.6f, altitude=%d, heading=%d" % (uptime, latitude, longitude, altitude, heading))
         
         # Delay for the rest of this second
         if 1.0 - (time.time() - timeStart) > 0:
             time.sleep(1.0 - (time.time() - timeStart))
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Simulate user-defined ownship and traffic for Stratux/GDL90 network receivers")
     parser.add_argument('--host', dest='host', type=str, help='Host/subnet to broadcast GDL90 packets to')
-    parser.add_argument('--port', dest='port', type=int, help='Port to broadcast GDL90 packets to')    
+    parser.add_argument('--port', dest='port', type=int, help='Port to broadcast GDL90 packets to') 
+    parser.add_argument('--lat', dest='lat', type=float, help='Ownship latitude') 
+    parser.add_argument('--long', dest='long', type=float, help='Ownship longitude') 
+    parser.add_argument('--alt', dest='alt', type=int, help='Ownnship altitude') 
+    parser.add_argument('--hspeed', dest='hspeed', type=int, help='Ownship horizontal speed') 
+    parser.add_argument('--vspeed', dest='vspeed', type=int, help='Ownship vertical speed') 
+    parser.add_argument('--hdg', dest='hdg', type=float, help='Ownship heading (degrees)') 
+    parser.add_argument('--callsign', dest='callsign', type=str, help='Ownship callsign') 
+    parser.add_argument('traffic', nargs='*', help='Traffic items in CSV arg list, each of the form lat=x,long=y,alt=z,hdg=d,hspeed=vx,vspeed=vz,callsign=abc1234')
+    parser.add_argument('--v', dest='verbose', help='Verbose output') 
     pargs = parser.parse_args()
     threading1 = threading.Thread(target=main, args=(pargs,))
     threading1.daemon = True
