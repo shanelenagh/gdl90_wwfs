@@ -30,6 +30,9 @@ lat_lon_diff = .005
 vert_diff = 100
 last_input_tmst = 0
 heading_input = 360
+const_own_velocity = 0
+const_traf_velocity = 0
+const_accel = 10
 
 def process_input():    
     global lat_input
@@ -39,9 +42,13 @@ def process_input():
     global lat_lon_diff
     global last_input_tmst
     global heading_input
+    global const_own_velocity
+    global const_accel
+    global const_traf_velocity
+    
     while True:
         key = keyboard.read_key()
-        if key in ("j", "l", "i", "k", "n", ".", "u", "o", "a", "d", "=", "-", "q"):
+        if key in ("j", "l", "i", "k", "n", ".", "u", "o", "a", "d", "=", "-", "q", "f", "s", "w", "r"):
             print(f"got key {key}")
             if key == "j":
                 lon_input -= lat_lon_diff
@@ -70,7 +77,19 @@ def process_input():
             elif key == "o":
                 lon_input += lat_lon_diff
                 lat_input += lat_lon_diff
-                heading_input = 45                
+                heading_input = 45   
+            elif key == "f":
+                const_own_velocity += const_accel
+            elif key == "s":
+                const_own_velocity -= const_accel
+                if const_own_velocity < 0:
+                    const_own_velocity = 0
+            elif key == "r":
+                const_traf_velocity += const_accel
+            elif key == "w":
+                const_traf_velocity -= const_accel
+                if const_traf_velocity < 0:
+                    const_traf_velocity = 0                    
             elif key == "a":
                 vinput += vert_diff
                 print(f"ascending by setting vinput to {vinput}")
@@ -80,10 +99,12 @@ def process_input():
             elif key == "=":
                 vert_diff *= 10.00
                 lat_lon_diff *= 10.00
+                const_accel *= 10.00
                 print(f"increased lat/lon diff to {lat_lon_diff} and vert diff to {vert_diff}")
             elif key == "-":
                 vert_diff /= 10.00
                 lat_lon_diff /= 10.00
+                const_accel /= 10.00
                 print(f"decreased lat/lon diff to {lat_lon_diff} and vert diff to {vert_diff}")
             elif key == "q":
                 print("Bye!")
@@ -147,6 +168,8 @@ def main(args):
     global lon_input
     global vinput
     global heading_input
+    global const_own_velocity
+    global const_traf_velocity    
     
     if args.host:
         destAddr = args.host
@@ -192,10 +215,10 @@ def main(args):
         traffic = parse_traffic_list(args.traffic)
     else:
         traffic = [
-            (41.60, -96.00, 3000, 100, 500, 45, 'NBNDT1', 0x000001),
-            (41.60, -95.80, 2500, 120, 0, 295, 'NBNDT2', 0x000002),
-            (41.18, -95.93, 3200, 150, -100, 285, 'NBNDT3', 0x000003),
-            (41.13, -95.30, 2000, 400, 250, 10, 'NBNDT4', 0x000004),
+            [41.60, -96.00, 3000, const_traf_velocity, 500, 45, 'NBNDT1', 0x000001],
+            [41.60, -95.80, 2500, const_traf_velocity, 0, 295, 'NBNDT2', 0x000002],
+            [41.18, -95.93, 3200, const_traf_velocity, -100, 285, 'NBNDT3', 0x000003],
+            [41.13, -95.30, 2000, const_traf_velocity, 250, 10, 'NBNDT4', 0x000004],
         ]
     
     uptime = 0
@@ -210,8 +233,8 @@ def main(args):
         timeStart = time.time()  # mark start time of message burst
         
         # Move ourself, if input supplied
-        latitude = latitudePrev + lat_input 
-        longitude = longitudePrev + lon_input 
+        latitude = latitudePrev + lat_input + (const_own_velocity / (60.0*3600.0)) * math.cos((heading_input / 180 * math.pi))
+        longitude = longitudePrev + lon_input + (const_own_velocity / (60.0*3600.0)) * math.sin((heading_input / 180 * math.pi))
         altitude = altitudePrev + vinput 
         heading = heading_input 
         
@@ -252,6 +275,11 @@ def main(args):
         packetTotal += 1
         
         # Traffic Reports
+        if const_traf_velocity > 0: 
+            for i in range(len(traffic)):
+                traffic[i][3] = const_traf_velocity
+                traffic[i][0] = traffic[i][0]+(const_traf_velocity / (60.0*3600.0)) * math.cos((traffic[i][5] / 180 * math.pi))
+                traffic[i][1] = traffic[i][1]+(const_traf_velocity / (60.0*3600.0)) * math.sin((traffic[i][5] / 180 * math.pi))
         for t in traffic:
             (tlat, tlong, talt, tspeed, tvspeed, thdg, tcall, taddr) = t
             buf = encoder.msgTrafficReport(latitude=tlat, longitude=tlong, altitude=talt, hVelocity=tspeed, vVelocity=tvspeed, trackHeading=thdg, callSign=tcall, address=taddr)
