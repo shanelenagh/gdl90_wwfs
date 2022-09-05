@@ -296,7 +296,7 @@ def main(args):
         # On-screen status output, every 5 seconds
         uptime += 1
         if uptime % 5 == 0:
-            print ("Uptime %d, lat=%3.6f, long=%3.6f, altitude=%d, heading=%d" % (uptime, latitude, longitude, altitude, heading))
+            print ("Uptime %d, lat=%3.6f, long=%3.6f, altitude=%d, heading=%d, speed=%d" % (uptime, latitude, longitude, altitude, heading, groundspeed))
         
         # Delay for the rest of this second
         if 1.0 - (time.time() - timeStart) > 0:
