@@ -5,9 +5,9 @@
 import sys
 import datetime
 from collections import deque
-import messages
+import gdl90.messages
 from gdl90.fcs import crcCheck
-from messagesuat import messageUatToObject
+from gdl90.messagesuat import messageUatToObject
 
 
 class Decoder(object):
@@ -71,7 +71,8 @@ class Decoder(object):
             
             # Look to see if we have an ending 0x7e marker yet
             try:
-                i = self.inputBuffer.index(chr(0x7e), 1)
+                #print(f"Buffer {self.inputBuffer}")
+                i = self.inputBuffer.index(ord('~'), 1)
             except ValueError:
                 # no end marker found yet
                 #self._log("no end marker found; leaving parser for now")
@@ -169,7 +170,7 @@ class Decoder(object):
                 print(" " + hexstr)
         """
         
-        m = messages.messageToObject(msg)
+        m = gdl90.messages.messageToObject(msg)
         if not m:
             return False
         
@@ -238,7 +239,7 @@ class Decoder(object):
         foundEscapeChar = False
         while True:
             try:
-                i = msg.index(chr(escapeValue))
+                i = msg.index(int(chr(escapeValue)))
                 foundEscapeChar = True
                 msgNew.extend(msg[0:i]); # everything up to the escape character
                 
