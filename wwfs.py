@@ -33,6 +33,8 @@ heading_input = 360
 const_own_velocity = 0
 const_traf_velocity = 0
 const_accel = 10
+own_ground = 0
+traffic_ground = 0
 
 def process_input():    
     global lat_input
@@ -45,10 +47,12 @@ def process_input():
     global const_own_velocity
     global const_accel
     global const_traf_velocity
+    global own_ground
+    global traffic_ground
     
     while True:
         key = keyboard.read_key()
-        if key in ("j", "l", "i", "k", "n", ".", "u", "o", "a", "d", "=", "-", "q", "f", "s", "w", "r"):
+        if key in ("j", "l", "i", "k", "n", ".", "u", "o", "a", "d", "=", "-", "q", "f", "s", "w", "r", "g", "t"):
             print(f"got key {key}")
             if key == "j":
                 lon_input -= lat_lon_diff
@@ -80,6 +84,10 @@ def process_input():
                 heading_input = 45   
             elif key == "f":
                 const_own_velocity += const_accel
+            elif key == "g":
+                own_ground = 1 if own_ground == 0 else 0
+            elif key == "t":
+                traffic_ground = 1 if traffic_ground == 0 else 0
             elif key == "s":
                 const_own_velocity -= const_accel
                 if const_own_velocity < 0:
@@ -169,7 +177,9 @@ def main(args):
     global vinput
     global heading_input
     global const_own_velocity
-    global const_traf_velocity    
+    global const_traf_velocity  
+    global own_ground
+    global traffic_ground
     
     if args.host:
         destAddr = args.host
@@ -265,7 +275,7 @@ def main(args):
         packetTotal += 1
         
         # Ownership Report
-        buf = encoder.msgOwnershipReport(latitude=latitude, longitude=longitude, altitude=altitude, hVelocity=groundspeed, vVelocity=verticalspeed, trackHeading=heading, callSign=callSign)
+        buf = encoder.msgOwnershipReport(latitude=latitude, longitude=longitude, altitude=altitude, hVelocity=groundspeed, vVelocity=verticalspeed, trackHeading=heading, callSign=callSign, misc=(9 if own_ground == 0 else 1))
         s.sendto(buf, (destAddr, destPort))
         packetTotal += 1
         
@@ -282,10 +292,10 @@ def main(args):
                 traffic[i][1] = traffic[i][1]+(const_traf_velocity / (60.0*3600.0)) * math.sin((traffic[i][5] / 180 * math.pi))
         for t in traffic:
             (tlat, tlong, talt, tspeed, tvspeed, thdg, tcall, taddr) = t
-            buf = encoder.msgTrafficReport(latitude=tlat, longitude=tlong, altitude=talt, hVelocity=tspeed, vVelocity=tvspeed, trackHeading=thdg, callSign=tcall, address=taddr)
+            buf = encoder.msgTrafficReport(latitude=tlat, longitude=tlong, altitude=talt, hVelocity=tspeed, vVelocity=tvspeed, trackHeading=thdg, callSign=tcall, address=taddr, misc=(9 if traffic_ground == 0 else 1))
             s.sendto(buf, (destAddr, destPort))
             if args.verbose:
-                print(f"Traffic {tcall} at ({tlat},{tlong}) at alt {talt}, groundspeed {tspeed}, vspeed {tvspeed}, heading {thdg}")
+                print(f"Traffic {tcall} at ({tlat},{tlong}) at alt {talt}, groundspeed {tspeed}, vspeed {tvspeed}, heading {thdg}, ground {traffic_ground}")
             packetTotal += 1
         
         # GPS Time, Custom 101 Message
@@ -296,7 +306,7 @@ def main(args):
         # On-screen status output, every 5 seconds
         uptime += 1
         if uptime % 5 == 0:
-            print ("Uptime %d, lat=%3.6f, long=%3.6f, altitude=%d, heading=%d, speed=%d" % (uptime, latitude, longitude, altitude, heading, groundspeed))
+            print ("Uptime %d, lat=%3.6f, long=%3.6f, altitude=%d, heading=%d, speed=%d, ground=%d" % (uptime, latitude, longitude, altitude, heading, groundspeed, own_ground))
         
         # Delay for the rest of this second
         if 1.0 - (time.time() - timeStart) > 0:
