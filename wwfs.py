@@ -9,7 +9,7 @@ the parameters for the ownship/pilot craft being received through user input (cu
 just CLI with keyboard listener, but rudimentary Tkinter UI might be added in a future version)
 
 Copyright (c) 2013 by Eric Dey; All rights reserved
-Copyright (c) 2021 by Shane Lenagh
+Copyright (c) 2022 by Shane Lenagh
 """
 
 import time
@@ -290,6 +290,7 @@ def main(args):
                 traffic[i][3] = const_traf_velocity
                 traffic[i][0] = traffic[i][0]+(const_traf_velocity / (60.0*3600.0)) * math.cos((traffic[i][5] / 180 * math.pi))
                 traffic[i][1] = traffic[i][1]+(const_traf_velocity / (60.0*3600.0)) * math.sin((traffic[i][5] / 180 * math.pi))
+                traffic[i][2] = traffic[i][2]+(traffic[i][4] / 60.0) # ascend/descend by stated rate
         for t in traffic:
             (tlat, tlong, talt, tspeed, tvspeed, thdg, tcall, taddr) = t
             buf = encoder.msgTrafficReport(latitude=tlat, longitude=tlong, altitude=talt, hVelocity=tspeed, vVelocity=tvspeed, trackHeading=thdg, callSign=tcall, address=taddr, misc=(9 if traffic_ground == 0 else 1))
