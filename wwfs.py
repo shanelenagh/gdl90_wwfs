@@ -225,8 +225,8 @@ def main(args):
         traffic = parse_traffic_list(args.traffic)
     else:
         traffic = [
-            [41.60, -96.00, 3000, const_traf_velocity, 500, 45, 'NBNDT1', 0x000001],
-            [41.60, -95.80, 2500, const_traf_velocity, 0, 295, 'NBNDT2', 0x000002],
+            [41.40, -96.00, 3000, const_traf_velocity, 500, 45, 'NBNDT1', 0x000001],
+            [41.40, -95.80, 2500, const_traf_velocity, 0, 295, 'NBNDT2', 0x000002],
             [41.18, -95.93, 3200, const_traf_velocity, -100, 285, 'NBNDT3', 0x000003],
             [41.13, -95.30, 2000, const_traf_velocity, 250, 10, 'NBNDT4', 0x000004],
         ]
